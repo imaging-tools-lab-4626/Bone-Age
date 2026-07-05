@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bone Age Report Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #333;
+            border-radius: 10px;
+            background-color: #1e1e1e;
+        }
+        h1 {
+            text-align: center;
+            color: #bb86fc;
+        }
+        label {
+            display: block;
+            margin: 15px 0 5px;
+            color: #b0bec5;
+        }
+        select, input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            background-color: #333;
+            color: #e0e0e0;
+            border: 1px solid #555;
+            border-radius: 5px;
+        }
+        button {
+            width: auto;
+            padding: 10px;
+            background-color: #bb86fc;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #9f6ddf;
+        }
+        .primary-button {
+            width: 100%;
+            display: block;
+        }
+        .output, .calculations {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #333;
+            border: 1px solid #444;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            color: #e0e0e0;
+        }
+        .calculations {
+            background-color: #2c2c2c;
+        }
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .copy-report-btn {
+            padding: 8px 12px;
+            background-color: #03dac5;
+            color: #121212;
+            font-weight: 600;
+        }
+        .copy-report-btn:hover {
+            background-color: #00bfa5;
+        }
+        .copy-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 8px;
+            margin: 0 3px;
+            background-color: #1f1f1f;
+            color: #e0e0e0;
+            border: 1px solid #3a3a3a;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9em;
+            line-height: 1.2;
+            vertical-align: baseline;
+            transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+        }
+        .copy-chip:hover {
+            border-color: #bb86fc;
+            background-color: #2c2c2c;
+            color: #f5f5f5;
+        }
+        .copy-chip-wrapper {
+            display: inline-flex;
+            align-items: center;
+        }
+        .copy-suffix {
+            margin-left: 4px;
+            color: #b0bec5;
+        }
+        .field-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .toggle-group {
+            display: inline-flex;
+            padding: 3px;
+            background: #1b1b1b;
+            border: 1px solid #3a3a3a;
+            border-radius: 10px;
+            gap: 4px;
+        }
+        .toggle-btn {
+            width: auto;
+            padding: 6px 10px;
+            background: transparent;
+            color: #b0bec5;
+            border-radius: 7px;
+            border: none;
+            font-size: 0.9em;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .toggle-btn.active {
+            background: #2f1f45;
+            color: #e7d8ff;
+        }
+        .toggle-btn:not(.active):hover {
+            background: #262626;
+            color: #e0e0e0;
+        }
+        .inline-inputs {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 10px;
+        }
+        .inline-inputs input {
+            margin-bottom: 0;
+        }
+        .input-separator {
+            color: #b0bec5;
+            font-weight: 600;
+            text-align: center;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Bone Age Report Generator</h1>
+
+        <label for="gender">Gender:</label>
+        <select id="gender">
+            <option value="" disabled selected>Select Gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+        </select>
+
+        <label for="birthdate">Patient's Birthdate:</label>
+        <input type="date" id="birthdate">
+
+        <div class="field-header">
+            <label for="bone-age">Bone Age:</label>
+            <div class="toggle-group" id="bone-age-toggle" role="group" aria-label="Select bone age input mode">
+                <button type="button" class="toggle-btn active" data-mode="months">Months</button>
+                <button type="button" class="toggle-btn" data-mode="years-months">Years / Months</button>
+            </div>
+        </div>
+        <div id="months-input">
+            <input type="number" id="bone-age" placeholder="Enter bone age in months" min="0">
+        </div>
+        <div id="years-months-input" class="hidden">
+            <div class="inline-inputs">
+                <input type="number" id="bone-age-years" placeholder="Years" min="0">
+                <span class="input-separator">/</span>
+                <input type="number" id="bone-age-extra-months" placeholder="Months" min="0" max="11">
+            </div>
+        </div>
+
+        <button class="primary-button" onclick="generateReport()">Generate Report</button>
+
+        <div class="output" id="output"></div>
+        <div class="calculations" id="calculations"></div>
+    </div>
+
+    <script>
+        // Data for boys
+        const boysData = {
+            3: [3.01, 0.69], 6: [6.09, 1.13], 9: [9.56, 1.43], 12: [12.74, 1.97], 18: [19.36, 3.52],
+            24: [25.97, 3.92], 30: [32.40, 4.52], 36: [38.21, 5.40], 42: [43.89, 5.48], 48: [49.04, 6.66],
+            54: [56.09, 8.36], 60: [62.43, 8.79], 72: [75.46, 9.17], 84: [88.20, 8.91], 96: [101.38, 9.10],
+            108: [113.90, 9.00], 120: [125.68, 9.79], 132: [137.32, 10.09], 144: [148.82, 10.38],
+            156: [158.39, 10.44], 168: [170.02, 10.72], 180: [182.72, 11.32], 192: [195.32, 12.86],
+            204: [206.21, 13.05]
+        };
+
+        // Data for girls
+        const girlsData = {
+            3: [3.02, 0.72], 6: [6.04, 1.16], 9: [9.05, 1.36], 12: [12.04, 1.77], 18: [18.22, 3.49],
+            24: [24.16, 4.64], 30: [30.96, 5.67], 36: [36.63, 5.93], 42: [43.50, 7.48], 48: [50.14, 8.08],
+            54: [60.06, 10.73], 60: [66.21, 11.65], 72: [78.50, 10.23], 84: [89.30, 9.64], 96: [100.66, 10.23],
+            108: [113.86, 10.74], 120: [125.66, 11.73], 132: [137.87, 11.94], 144: [149.62, 10.24],
+            156: [162.28, 10.67], 168: [174.25, 11.30], 180: [183.62, 9.23], 192: [189.44, 7.31]
+        };
+
+        // Declare a variable to store the birth date object
+        let birthDateObj;
+        let boneAgeInputMode = "months";
+
+        // Function to calculate the patient's age in months
+        function calculateAgeInMonths(birthdate) {
+            const today = new Date();
+            const birthParts = birthdate.split('-');
+
+            // Create a date in UTC at noon to avoid timezone issues
+            birthDateObj = new Date(Date.UTC(birthParts[0], birthParts[1] - 1, birthParts[2], 12, 0, 0));
+
+            let years = today.getUTCFullYear() - birthDateObj.getUTCFullYear();
+            let months = today.getUTCMonth() - birthDateObj.getUTCMonth();
+            let days = today.getUTCDate() - birthDateObj.getUTCDate();
+
+            // Adjust if birthdate hasn't occurred yet this year
+            if (months < 0 || (months === 0 && days < 0)) {
+                years--;
+                months += 12;
+            }
+
+            // Calculate total months
+            let totalMonths = years * 12 + months;
+
+            // Round up if the days are 16 or more
+            if (days >= 16) {
+                totalMonths++;
+            }
+
+            return totalMonths;
+        }
+
+        function copyToClipboard(text, button) {
+            navigator.clipboard.writeText(text).then(() => {
+                if (!button) return;
+                const originalText = button.textContent;
+                const originalWidth = button.getBoundingClientRect().width;
+
+                button.style.width = `${originalWidth}px`;
+                button.textContent = "✅";
+
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.width = "";
+                }, 1200);
+            });
+        }
+
+        function createCopyChip(copyValue, suffixText = "", displayText = copyValue) {
+            const wrapper = document.createElement("span");
+            wrapper.className = "copy-chip-wrapper";
+
+            const chip = document.createElement("button");
+            chip.type = "button";
+            chip.className = "copy-chip";
+            chip.textContent = displayText;
+            chip.dataset.copy = copyValue;
+            chip.title = "Click to copy this value";
+
+            wrapper.appendChild(chip);
+
+            if (suffixText) {
+                const suffix = document.createElement("span");
+                suffix.className = "copy-suffix";
+                suffix.textContent = suffixText;
+                wrapper.appendChild(suffix);
+            }
+
+            return wrapper;
+        }
+
+        document.querySelectorAll('#bone-age-toggle .toggle-btn').forEach((button) => {
+            button.addEventListener('click', () => setBoneAgeMode(button.dataset.mode));
+        });
+
+        function setBoneAgeMode(mode) {
+            boneAgeInputMode = mode;
+            const monthsInput = document.getElementById('months-input');
+            const yearsMonthsInput = document.getElementById('years-months-input');
+            const toggleButtons = document.querySelectorAll('#bone-age-toggle .toggle-btn');
+
+            monthsInput.classList.toggle('hidden', mode !== 'months');
+            yearsMonthsInput.classList.toggle('hidden', mode !== 'years-months');
+
+            toggleButtons.forEach((btn) => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+        }
+
+        function parseBoneAge() {
+            if (boneAgeInputMode === 'months') {
+                return parseFloat(document.getElementById('bone-age').value);
+            }
+
+            const years = parseFloat(document.getElementById('bone-age-years').value || 0);
+            const months = parseFloat(document.getElementById('bone-age-extra-months').value || 0);
+
+            if (isNaN(years) || isNaN(months)) {
+                return NaN;
+            }
+
+            if (months >= 12) {
+                alert('Months value should be less than 12 when using Years / Months input.');
+                return NaN;
+            }
+
+            return years * 12 + months;
+        }
+
+        function generateReport() {
+            const gender = document.getElementById('gender').value;
+            const birthdate = document.getElementById('birthdate').value;
+            const boneAge = parseBoneAge();
+
+            // Ensure a gender is selected
+            if (!gender) {
+                alert("Please select a gender.");
+                return;
+            }
+
+            if (!birthdate || isNaN(boneAge) || boneAge < 0) {
+                alert("Please enter valid birthdate and bone age.");
+                return;
+            }
+
+            const chronologicalAge = calculateAgeInMonths(birthdate);
+
+            // Select the correct data based on gender
+            let data;
+            if (gender === 'male') {
+                data = boysData;
+            } else {
+                data = girlsData;
+            }
+
+            // Find the base year (closest lower bound year) and remaining months
+            const baseYear = Math.floor(chronologicalAge / 12) * 12;
+            const remainingMonths = chronologicalAge % 12;
+
+            const [meanSkeletalAgeAtBase, stdDev] = data[baseYear];
+
+            // Calculate the adjusted mean skeletal age by simply adding the remaining months
+            const meanSkeletalAge = meanSkeletalAgeAtBase + remainingMonths;
+
+            // Calculate the difference and standard deviation
+            const deviationFromMean = (boneAge - meanSkeletalAge) / stdDev;
+            const deviationDescription = deviationFromMean > 0 ? "above" : "below";
+            const deviationMagnitude = Math.abs(deviationFromMean).toFixed(2);
+            const meanSkeletalAgeRounded = meanSkeletalAge.toFixed(2);
+
+            // Determine the impression
+            let impression;
+            if (Math.abs(deviationFromMean) > 2) {
+                impression = deviationFromMean > 2 ? "Advanced bone age." : "Delayed bone age.";
+            } else {
+                impression = "Bone age is within two standard deviations of the chronological age.";
+            }
+
+            // Use the stored birthDateObj for display
+            const birthDateString = birthDateObj.toLocaleDateString();
+
+            // Prepare copy chips for the report values
+            const boneAgeChip = createCopyChip(`${boneAge}`, " months");
+            const chronologicalAgeChip = createCopyChip(`${chronologicalAge}`, " months");
+            const meanSkeletalAgeChip = createCopyChip(`${meanSkeletalAgeRounded}`, " months");
+            const stdDevChip = createCopyChip(`${stdDev}`, " months");
+            const deviationChip = createCopyChip(`${deviationMagnitude}`, " standard deviations");
+            const directionChip = createCopyChip(`${deviationDescription}`, " the mean");
+            const impressionChip = createCopyChip(impression, "", impression);
+
+            // Generate the report with interactive chips
+            const reportContainer = document.createElement("div");
+            const header = document.createElement("div");
+            header.className = "report-header";
+            header.innerHTML = "<strong>Generated Report</strong>";
+
+            const copyReportBtn = document.createElement("button");
+            copyReportBtn.type = "button";
+            copyReportBtn.className = "copy-report-btn";
+            copyReportBtn.id = "copy-report-btn";
+            copyReportBtn.textContent = "Copy report";
+            header.appendChild(copyReportBtn);
+
+            const firstParagraph = document.createElement("p");
+            firstParagraph.append("Utilizing the atlas of Greulich and Pyle, PA view of left hand and wrist reveals a bone age of ");
+            firstParagraph.appendChild(boneAgeChip);
+            firstParagraph.append(" while the chronological age of the patient is ");
+            firstParagraph.appendChild(chronologicalAgeChip);
+            firstParagraph.append(".");
+
+            const secondParagraph = document.createElement("p");
+            secondParagraph.append("In the Brush foundation study of normal patients, a patient of this chronological age had a mean bone age of ");
+            secondParagraph.appendChild(meanSkeletalAgeChip);
+            secondParagraph.append(" with one standard deviation of ");
+            secondParagraph.appendChild(stdDevChip);
+            secondParagraph.append(".");
+
+            const thirdParagraph = document.createElement("p");
+            thirdParagraph.append("Therefore this patient is ");
+            thirdParagraph.appendChild(deviationChip);
+            thirdParagraph.append(" ");
+            thirdParagraph.appendChild(directionChip);
+            thirdParagraph.append(".");
+
+            const impressionParagraph = document.createElement("p");
+            const impressionLabel = document.createElement("strong");
+            impressionLabel.textContent = "Impression: ";
+            impressionParagraph.appendChild(impressionLabel);
+            impressionParagraph.appendChild(impressionChip);
+
+            reportContainer.appendChild(header);
+            reportContainer.appendChild(firstParagraph);
+            reportContainer.appendChild(secondParagraph);
+            reportContainer.appendChild(thirdParagraph);
+            reportContainer.appendChild(impressionParagraph);
+
+            const reportText = Array.from(reportContainer.querySelectorAll('p')).map((p) => p.innerText).join('\n');
+
+            // Generate the calculation breakdown
+            const calculationBreakdown = `
+**Chronological Age Calculations**:
+- Birthdate: ${birthDateString}
+- Chronological Age (months): ${chronologicalAge}
+
+**Bone Age Calculations**:
+- Base Year: ${baseYear / 12} years
+- Remaining Months Over Year Mark: ${remainingMonths}
+- Mean Skeletal Age at Base Year (${baseYear / 12} years): ${meanSkeletalAgeAtBase} months
+- Adjusted Mean Skeletal Age (mean + remaining months): ${meanSkeletalAgeRounded} months
+
+**Deviation Calculations**:
+- Patient's Bone Age: ${boneAge} months
+- Standard Deviation: ${stdDev} months
+- Difference Between Bone Age and Adjusted Mean: ${(boneAge - meanSkeletalAge).toFixed(2)} months
+- Number of Standard Deviations From Mean: ${deviationMagnitude} ${deviationDescription} the mean
+            `;
+
+            // Display the report and calculation breakdown
+            const outputContainer = document.getElementById('output');
+            outputContainer.innerHTML = "";
+            outputContainer.appendChild(reportContainer);
+            document.getElementById('calculations').textContent = calculationBreakdown;
+
+            // Attach copy functionality to chips
+            outputContainer.querySelectorAll('.copy-chip').forEach((chip) => {
+                chip.addEventListener('click', () => copyToClipboard(chip.dataset.copy, chip));
+            });
+
+            // Copy entire report button
+            copyReportBtn.addEventListener('click', () => {
+                copyToClipboard(reportText, copyReportBtn);
+            });
+        }
+    </script>
+
+</body>
+</html>
